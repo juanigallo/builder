@@ -1,5 +1,6 @@
 import { all, call, put, takeEvery } from 'redux-saga/effects'
-import { CatalystClient, DeploymentWithMetadataContentAndPointers } from 'dcl-catalyst-client'
+import { CatalystClient } from 'dcl-catalyst-client'
+import { Entity, EntityType } from 'dcl-catalyst-commons'
 import { Authenticator, AuthIdentity } from 'dcl-crypto'
 import { getIdentity } from 'modules/identity/utils'
 import {
@@ -24,12 +25,12 @@ export function* entitySaga(catalyst: CatalystClient) {
 
   // handlers
   function* handleFetchEntitiesRequest(action: FetchEntitiesRequestAction) {
-    const { options } = action.payload
+    const { type, pointers } = action.payload
     try {
-      const entities: DeploymentWithMetadataContentAndPointers[] = yield call([catalyst, 'fetchAllDeployments'], options)
-      yield put(fetchEntitiesSuccess(entities, options))
+      const entities: Entity[] = yield call([catalyst, 'fetchEntitiesByPointers'], type, pointers)
+      yield put(fetchEntitiesSuccess(type, pointers, entities))
     } catch (error) {
-      yield put(fetchEntitiesFailure(error.message, options))
+      yield put(fetchEntitiesFailure(type, pointers, error.message))
     }
   }
 
@@ -55,9 +56,9 @@ export function* entitySaga(catalyst: CatalystClient) {
   }
 
   function* handleDeployEntitiesSuccess(action: DeployEntitiesSuccessAction) {
-    const entityIds = action.payload.entities.map(entity => entity.entityId)
-    if (entityIds.length > 0) {
-      yield put(fetchEntitiesRequest({ filters: { entityIds } }))
+    const pointers = action.payload.entities.map(entity => entity.entityId)
+    if (pointers.length > 0) {
+      yield put(fetchEntitiesRequest(EntityType.WEARABLE, pointers))
     }
   }
 }

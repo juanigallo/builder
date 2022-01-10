@@ -1,4 +1,4 @@
-import { DeploymentWithMetadataContentAndPointers } from 'dcl-catalyst-client'
+import { Entity } from 'dcl-catalyst-commons'
 import { loadingReducer, LoadingState } from 'decentraland-dapps/dist/modules/loading/reducer'
 import {
   DeployEntitiesFailureAction,
@@ -16,7 +16,7 @@ import {
 } from './actions'
 
 export type EntityState = {
-  data: Record<string, DeploymentWithMetadataContentAndPointers>
+  data: Record<string, Entity>
   loading: LoadingState
   error: string | null
 }
@@ -54,7 +54,7 @@ export function entityReducer(state: EntityState = INITIAL_STATE, action: Entity
         data: {
           ...state.data,
           ...action.payload.entities.reduce((obj, entity) => {
-            obj[entity.entityId] = entity
+            obj[entity.id] = entity
             return obj
           }, {} as EntityState['data'])
         }

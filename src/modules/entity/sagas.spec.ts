@@ -1,5 +1,5 @@
-import { CatalystClient, DeploymentOptions, DeploymentWithMetadataContentAndPointers } from 'dcl-catalyst-client'
-import { EntityType } from 'dcl-catalyst-commons'
+import { CatalystClient } from 'dcl-catalyst-client'
+import { Entity, EntityType, EntityVersion } from 'dcl-catalyst-commons'
 import { expectSaga } from 'redux-saga-test-plan'
 import { call } from 'redux-saga/effects'
 import { fetchEntitiesFailure, fetchEntitiesRequest, fetchEntitiesSuccess } from './actions'
@@ -12,39 +12,40 @@ describe('Entity sagas', () => {
     } as unknown) as CatalystClient
 
     it('should dispatch a failue action if the client throws', () => {
-      const options: DeploymentOptions<DeploymentWithMetadataContentAndPointers> = { filters: { pointers: ['aPointer', 'anotherPointer'] } }
+      const pointers = ['aPointer', 'anotherPointer']
       const anErrorMessage = 'Something happened'
       return expectSaga(entitySaga, client)
-        .provide([[call([client, 'fetchAllDeployments'], options), Promise.reject(new Error(anErrorMessage))]])
-        .put(fetchEntitiesFailure(anErrorMessage, options))
-        .dispatch(fetchEntitiesRequest(options))
+        .provide([[call([client, 'fetchEntitiesByPointers'], EntityType.WEARABLE, pointers), Promise.reject(new Error(anErrorMessage))]])
+        .put(fetchEntitiesFailure(EntityType.WEARABLE, pointers, anErrorMessage))
+        .dispatch(fetchEntitiesRequest(EntityType.WEARABLE, pointers))
         .run({ silenceTimeout: true })
     })
 
     it('should dispatch a success action if the response returns successfully', () => {
-      const options: DeploymentOptions<DeploymentWithMetadataContentAndPointers> = { filters: { pointers: ['aPointer', 'anotherPointer'] } }
-      const entities: DeploymentWithMetadataContentAndPointers[] = [
+      const pointers = ['aPointer', 'anotherPointer']
+      const entities: Entity[] = [
         {
-          entityId: 'Qmhash',
-          deployedBy: '0xhash',
-          entityTimestamp: 1234,
-          entityType: EntityType.WEARABLE,
+          id: 'Qmhash',
+          timestamp: 1234,
+          type: EntityType.WEARABLE,
           pointers: ['aPointer'],
           content: [
             {
               hash: 'Qmhash',
-              key: 'pepito.jpg'
+              file: 'pepito.jpg'
             }
           ],
           metadata: {
+            owner: '0xpepito',
             some: 'thing'
-          }
+          },
+          version: EntityVersion.V4
         }
       ]
       return expectSaga(entitySaga, client)
-        .provide([[call([client, 'fetchAllDeployments'], options), Promise.resolve(entities)]])
-        .put(fetchEntitiesSuccess(entities, options))
-        .dispatch(fetchEntitiesRequest(options))
+        .provide([[call([client, 'fetchEntitiesByPointers'], EntityType.WEARABLE, pointers), Promise.resolve(entities)]])
+        .put(fetchEntitiesSuccess(EntityType.WEARABLE, pointers, entities))
+        .dispatch(fetchEntitiesRequest(EntityType.WEARABLE, pointers))
         .run({ silenceTimeout: true })
     })
   })
